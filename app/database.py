@@ -23,17 +23,28 @@ from app.models import Base, Brand, ChatSession, ChatMessage  # type: ignore
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
+DEFAULT_SQLITE_PATH = "sqlite:///./app.db"
+DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_SQLITE_PATH)
+
+IS_SQLITE = DATABASE_URL.startswith("sqlite")
 
 # If your Brand.owner_id is NOT NULL, set a fixed demo owner id here (UUID string).
 # Leave empty if Brand.owner_id is nullable.
 DEMO_OWNER_ID = os.getenv("DEMO_OWNER_ID", "")  # e.g., "00000000-0000-0000-0000-000000000000"
 
 # Engine / Session
+engine_kwargs: dict[str, Any] = {
+    "future": True,
+    "pool_pre_ping": True,
+}
+
+if IS_SQLITE:
+    # SQLite requires this when the ORM is used from different threads.
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+
 engine = create_engine(
     DATABASE_URL,
-    future=True,
-    pool_pre_ping=True,
+    **engine_kwargs,
 )
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False, future=True)
 
