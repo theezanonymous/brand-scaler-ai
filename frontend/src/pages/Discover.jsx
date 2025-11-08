@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { findSimilar } from '../api/mockAgent'
+import ShinyButton from '../components/ShinyButton'
+import { Link } from 'react-router-dom'
 
 export default function Discover(){
   const [brands, setBrands] = useState([])
@@ -17,17 +19,15 @@ export default function Discover(){
   return (
     <div className="container py-12 space-y-8">
       <h2 className="text-2xl font-semibold">2) Discover similar brands & viral posts</h2>
-
       <div className="grid md:grid-cols-3 gap-4">
         {loading ? Array.from({length:3}).map((_,i)=>(<div key={i} className="h-28 skeleton" />)) : brands.map(b => (
-          <div key={b.name} className="card p-4">
+          <div key={b.name} className="card p-4 animate-floaty">
             <div className="text-lg font-medium">{b.name}</div>
-            <div className="text-sm text-slate-500">{b.handle}</div>
+            <div className="text-sm text-slate-500">@{b.handle.replace('@','')}</div>
             <div className="text-sm mt-1">{b.followers.toLocaleString()} followers</div>
           </div>
         ))}
       </div>
-
       <div className="grid md:grid-cols-3 gap-4">
         {loading ? Array.from({length:3}).map((_,i)=>(<div key={i} className="h-40 skeleton" />)) : posts.map(p => (
           <div key={p.id} className="card p-4">
@@ -38,9 +38,8 @@ export default function Discover(){
           </div>
         ))}
       </div>
-
       <div className="flex justify-end">
-        <a href="/insights" className="btn-primary">Continue to insights</a>
+        <Link to="/insights"><ShinyButton>Continue to insights</ShinyButton></Link>
       </div>
     </div>
   )
