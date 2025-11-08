@@ -1,12 +1,28 @@
 import React, { useState } from 'react'
 import ShinyButton from '../components/ShinyButton.jsx'
+import { sendBusinessInfo } from '../api/api.js'
+
 export default function Dashboard(){
   const [profile, setProfile] = useState(()=> JSON.parse(localStorage.getItem('brand_profile') || '{}'))
   const [editing, setEditing] = useState(false)
   const [desc, setDesc] = useState(profile.description || '')
-  const saveDesc = () => {
-    const next = { ...profile, description: desc }
-    setProfile(next); localStorage.setItem('brand_profile', JSON.stringify(next)); setEditing(false)
+  const [saving, setSaving] = useState(false)
+  const saveDesc = async () => {
+    setSaving(true)
+    try {
+      const next = { ...profile, description: desc }
+      setProfile(next)
+      localStorage.setItem('brand_profile', JSON.stringify(next))
+      // Send updated info to backend
+      await sendBusinessInfo(next)
+      setEditing(false)
+    } catch (error) {
+      console.error('Error saving business info:', error)
+      alert('Failed to save to backend. Changes saved locally only.')
+      setEditing(false)
+    } finally {
+      setSaving(false)
+    }
   }
   return (
     <div className="container py-12 space-y-6">
@@ -25,8 +41,8 @@ export default function Dashboard(){
             <div className="space-y-2">
               <div className="input-wrap"><textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={6} className="input"/></div>
               <div className="flex gap-2 justify-end">
-                <ShinyButton onClick={saveDesc}>Save</ShinyButton>
-                <button className="btn btn-outline btn-sheen btn-glow parallax" onClick={()=>setEditing(false)}>Cancel</button>
+                <ShinyButton onClick={saveDesc} disabled={saving}>{saving ? 'Saving...' : 'Save'}</ShinyButton>
+                <button className="btn btn-outline btn-sheen btn-glow parallax" onClick={()=>setEditing(false)} disabled={saving}>Cancel</button>
               </div>
             </div>
           )}

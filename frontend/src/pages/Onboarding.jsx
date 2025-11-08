@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ShinyButton from '../components/ShinyButton.jsx'
+import { sendBusinessInfo } from '../api/api.js'
+
 export default function Onboarding(){
   const [name, setName] = useState('Viralight')
   const [industry, setIndustry] = useState('')
@@ -8,6 +10,7 @@ export default function Onboarding(){
   const [color, setColor] = useState('#8b5cf6')
   const [description, setDescription] = useState('')
   const [images, setImages] = useState([])
+  const [saving, setSaving] = useState(false)
   const navigate = useNavigate()
   useEffect(()=>{
     const existing = JSON.parse(localStorage.getItem('brand_profile') || '{}')
@@ -23,7 +26,24 @@ export default function Onboarding(){
       .then(urls => setImages(prev => [...prev, ...urls]))
   }
   const removeAt = (idx)=> setImages(prev => prev.filter((_,i)=>i!==idx))
-  const save = (e)=>{ e.preventDefault(); const profile = { name, industry, tone, color, description, images }; localStorage.setItem('brand_profile', JSON.stringify(profile)); navigate('/dashboard') }
+  const save = async (e)=>{ 
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const profile = { name, industry, tone, color, description, images }
+      // Save to localStorage
+      localStorage.setItem('brand_profile', JSON.stringify(profile))
+      // Send to backend
+      await sendBusinessInfo(profile)
+      navigate('/dashboard')
+    } catch (error) {
+      console.error('Error saving business info:', error)
+      alert('Failed to save to backend. Profile saved locally only.')
+      navigate('/dashboard')
+    } finally {
+      setSaving(false)
+    }
+  }
   return (
     <div className="container py-12">
       <div className="max-w-4xl mx-auto card p-8 space-y-8">
@@ -66,8 +86,8 @@ export default function Onboarding(){
             )}
           </div>
           <div className="md:col-span-2 flex justify-end gap-2">
-            <button type="button" className="btn btn-outline btn-sheen btn-glow parallax" onClick={()=>navigate('/dashboard')}>Cancel</button>
-            <ShinyButton>Save Changes</ShinyButton>
+            <button type="button" className="btn btn-outline btn-sheen btn-glow parallax" onClick={()=>navigate('/dashboard')} disabled={saving}>Cancel</button>
+            <ShinyButton disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</ShinyButton>
           </div>
         </form>
       </div>

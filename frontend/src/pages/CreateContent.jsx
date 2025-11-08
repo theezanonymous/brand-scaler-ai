@@ -2,14 +2,19 @@ import React, { useState } from 'react'
 import AgentThinking from '../components/AgentThinking.jsx'
 import ShinyButton from '../components/ShinyButton.jsx'
 import PostPreview from '../components/PostPreview.jsx'
-import { pairImagesWithDrafts } from '../api/mockAgent.js'
+
+import { pairImagesWithDrafts } from '../api/api.js'
 export default function CreateContent(){
   const profile = JSON.parse(localStorage.getItem('brand_profile') || '{}')
   const [batch, setBatch] = useState([])
   const [loading, setLoading] = useState(false)
   const generate = async () => {
-    if(!profile?.images?.length) return alert('Please upload brand photos in Onboarding first.')
-    setLoading(true); const out = await pairImagesWithDrafts(profile.images); setBatch(out); setLoading(false)
+    setLoading(true)
+    // Use images if available, but don't require them
+    const images = profile?.images || []
+    const out = await pairImagesWithDrafts(images)
+    setBatch(out)
+    setLoading(false)
   }
   const regenerate = async () => generate()
   return (
@@ -22,10 +27,8 @@ export default function CreateContent(){
           <button className="btn btn-outline btn-sheen btn-glow parallax" onClick={regenerate}>Regenerate</button>
         </div>
       </div>
-      {!profile?.images?.length ? (
-        <div className="card p-6">No brand photos found. Go to Onboarding to add visuals.</div>
-      ) : batch.length === 0 ? (
-        <div className="card p-6">Click “Generate" to create multiple AI content concepts personalized to your brand.</div>
+      {batch.length === 0 ? (
+        <div className="card p-6">Click "Generate" to create multiple AI content concepts personalized to your brand.</div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
           {batch.map(item => (<PostPreview key={item.id} data={item} />))}

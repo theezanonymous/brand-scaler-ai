@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { scoutDiscovery } from '../api/mockAgent.js'
+import { scoutDiscovery } from '../api/api.js'
 import { Link } from 'react-router-dom'
 import ShinyButton from '../components/ShinyButton.jsx'
 export default function Discover(){
