@@ -1,24 +1,25 @@
-# database.py (no-auth, hackathon-friendly)
+# database.py (SQLite-only, no-auth, hackathon-friendly)
 """
 Thin convenience layer over SQLAlchemy for simple, method-based access.
-- Reads DATABASE_URL from .env
-- Provides a DB() class with simple CRUD for Brand/Session/Message
-- No user/auth dependencies
-- Works with SQLite (dev) and Postgres (prod)
+- SQLite ONLY (fast demo). Fails fast if DATABASE_URL isn't sqlite://
+- Reads DATABASE_URL from .env (defaults to sqlite:///./app.db)
+- CRUD for Brand / ChatSession / ChatMessage
+- FTS5 search on ChatMessage.text when available (falls back to LIKE)
 """
 
 from __future__ import annotations
 from contextlib import contextmanager
 from typing import Iterable, Optional, Any, List
 from datetime import datetime
-
 import os
-from dotenv import load_dotenv
-from sqlalchemy import create_engine, text, select, func
-from sqlalchemy.orm import sessionmaker, Session
 
-# 👇 Adjust this import to wherever your models are defined
-# NOTE: We intentionally do NOT import User here.
+from dotenv import load_dotenv
+from sqlalchemy import create_engine, text, select
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import event
+
+#  Adjust this import to wherever your models are defined
 from app.models import Base, Brand, ChatSession, ChatMessage  # type: ignore
 
 load_dotenv()
@@ -26,35 +27,114 @@ load_dotenv()
 DEFAULT_SQLITE_PATH = "sqlite:///./app.db"
 DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_SQLITE_PATH)
 
-IS_SQLITE = DATABASE_URL.startswith("sqlite")
+# --- Enforce SQLite only ---
+if not DATABASE_URL.startswith("sqlite"):
+    raise RuntimeError(
+        f"This build is SQLite-only. Set DATABASE_URL to sqlite:///... (got: {DATABASE_URL})"
+    )
 
-# If your Brand.owner_id is NOT NULL, set a fixed demo owner id here (UUID string).
-# Leave empty if Brand.owner_id is nullable.
+# Optional owner scoping (keep empty if Brand.owner_id is nullable)
 DEMO_OWNER_ID = os.getenv("DEMO_OWNER_ID", "")  # e.g., "00000000-0000-0000-0000-000000000000"
 
-# Engine / Session
-engine_kwargs: dict[str, Any] = {
-    "future": True,
-    "pool_pre_ping": True,
-}
-
-if IS_SQLITE:
-    # SQLite requires this when the ORM is used from different threads.
-    engine_kwargs["connect_args"] = {"check_same_thread": False}
-
-engine = create_engine(
+# --- Engine / Session ---
+engine: Engine = create_engine(
     DATABASE_URL,
-    **engine_kwargs,
+    future=True,
+    pool_pre_ping=True,
+    connect_args={"check_same_thread": False},  # needed for threaded FastAPI + SQLite
 )
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False, future=True)
 
+# --- Helpful PRAGMAs on connect ---
+@event.listens_for(engine, "connect")
+def _set_sqlite_pragmas(dbapi_connection, connection_record):  # type: ignore[no-redef]
+    cur = dbapi_connection.cursor()
+    # Foreign keys + WAL for fewer write locks + reasonable durability
+    cur.execute("PRAGMA foreign_keys = ON;")
+    cur.execute("PRAGMA journal_mode = WAL;")
+    cur.execute("PRAGMA synchronous = NORMAL;")
+    cur.close()
+
+def _sqlite_supports_fts5() -> bool:
+    """
+    Try to create a temporary FTS5 table to detect support.
+    Some bundled SQLite builds might lack FTS5.
+    """
+    try:
+        with engine.begin() as conn:
+            conn.exec_driver_sql("CREATE VIRTUAL TABLE IF NOT EXISTS _fts5_probe USING fts5(x);")
+            conn.exec_driver_sql("DROP TABLE IF EXISTS _fts5_probe;")
+        return True
+    except Exception:
+        return False
+
+def _ensure_sqlite_fts() -> bool:
+    """
+    Create FTS virtual table + triggers for chat_message(text).
+    Returns True if FTS5 is active, False otherwise.
+    """
+    if not _sqlite_supports_fts5():
+        return False
+
+    # FTS table stores: text (indexed) + message_id (for joins)
+    create_fts = """
+    CREATE VIRTUAL TABLE IF NOT EXISTS chat_message_fts
+    USING fts5(text, message_id UNINDEXED, tokenize='porter');
+    """
+
+    # Keep FTS in sync with base table via triggers
+    trg_insert = """
+    CREATE TRIGGER IF NOT EXISTS chat_message_ai
+    AFTER INSERT ON chat_message
+    BEGIN
+        INSERT INTO chat_message_fts(text, message_id)
+        VALUES (coalesce(new.text, ''), new.id);
+    END;
+    """
+    trg_update = """
+    CREATE TRIGGER IF NOT EXISTS chat_message_au
+    AFTER UPDATE OF text ON chat_message
+    BEGIN
+        UPDATE chat_message_fts
+           SET text = coalesce(new.text, '')
+         WHERE message_id = new.id;
+    END;
+    """
+    trg_delete = """
+    CREATE TRIGGER IF NOT EXISTS chat_message_ad
+    AFTER DELETE ON chat_message
+    BEGIN
+        DELETE FROM chat_message_fts WHERE message_id = old.id;
+    END;
+    """
+
+    with engine.begin() as conn:
+        conn.exec_driver_sql(create_fts)
+        conn.exec_driver_sql(trg_insert)
+        conn.exec_driver_sql(trg_update)
+        conn.exec_driver_sql(trg_delete)
+
+        # Build or repair the index from existing data (idempotent)
+        conn.exec_driver_sql("""
+            INSERT INTO chat_message_fts (rowid, text, message_id)
+            SELECT rowid, coalesce(text,''), id FROM chat_message
+            WHERE NOT EXISTS (
+                SELECT 1 FROM chat_message_fts f WHERE f.message_id = chat_message.id
+            );
+        """)
+
+    return True
+
+_HAS_FTS5 = False  # set by init_db()
+
 def init_db(create_all_if_empty: bool = True) -> None:
     """
-    Call once at startup. In dev/SQLite you can create tables if they don't exist.
-    In prod (Postgres), rely on Alembic migrations instead.
+    Call once at startup. Creates ORM tables and FTS index (if supported).
     """
-    if create_all_if_empty and DATABASE_URL.startswith("sqlite"):
+    global _HAS_FTS5
+    if create_all_if_empty:
         Base.metadata.create_all(bind=engine)
+    _HAS_FTS5 = _ensure_sqlite_fts()
 
 @contextmanager
 def session_scope() -> Iterable[Session]:
@@ -102,10 +182,9 @@ class DB:
         meta: Optional[dict[str, Any]] = None,
     ) -> Brand:
         with session_scope() as s:
-            # If your schema requires owner_id, fall back to DEMO_OWNER_ID.
             _owner = owner_id or (DEMO_OWNER_ID or None)
             b = Brand(
-                owner_id=_owner,  # okay if column is nullable; otherwise set DEMO_OWNER_ID env
+                owner_id=_owner,  # ok if column is NULLable; else set DEMO_OWNER_ID
                 name=name,
                 niche=niche,
                 tone=tone,
@@ -131,7 +210,6 @@ class DB:
     ) -> List[Brand]:
         with session_scope() as s:
             stmt = select(Brand).order_by(Brand.created_at.desc())
-            # If you kept owner scoping, filter when provided
             if owner_id or DEMO_OWNER_ID:
                 _owner = owner_id or (DEMO_OWNER_ID or None)
                 if _owner is not None:
@@ -214,7 +292,7 @@ class DB:
             stmt = stmt.order_by(ChatMessage.created_at.desc()).limit(limit)
             return list(s.execute(stmt).scalars())
 
-    # ---------- Search (simple & Postgres-aware) ----------
+    # ---------- Search (FTS5 when available, else LIKE) ----------
     def search_messages(
         self,
         brand_id: str,
@@ -222,20 +300,22 @@ class DB:
         limit: int = 50,
     ) -> List[ChatMessage]:
         """
-        - On Postgres: uses to_tsvector (english).
-        - On SQLite: falls back to LIKE.
+        SQLite:
+          - If FTS5 is active, uses MATCH on chat_message_fts.
+          - Otherwise, falls back to LIKE on chat_message.text.
         """
         with session_scope() as s:
-            if DATABASE_URL.startswith("postgres"):
+            if _HAS_FTS5:
                 stmt = text(
                     """
                     SELECT m.*
-                    FROM chat_message m
-                    JOIN chat_session cs ON cs.id = m.session_id
-                    WHERE cs.brand_id = :brand_id
-                      AND to_tsvector('english', coalesce(m.text, '')) @@ plainto_tsquery('english', :q)
-                    ORDER BY m.created_at DESC
-                    LIMIT :limit
+                      FROM chat_message m
+                      JOIN chat_session cs ON cs.id = m.session_id
+                      JOIN chat_message_fts f ON f.message_id = m.id
+                     WHERE cs.brand_id = :brand_id
+                       AND chat_message_fts MATCH :q
+                     ORDER BY m.created_at DESC
+                     LIMIT :limit
                     """
                 )
                 rows = s.execute(stmt, {"brand_id": brand_id, "q": query, "limit": limit}).mappings().all()
@@ -244,15 +324,23 @@ class DB:
                     return []
                 return list(s.execute(select(ChatMessage).where(ChatMessage.id.in_(ids))).scalars())
             else:
-                stmt = (
-                    select(ChatMessage)
-                    .join(ChatSession, ChatSession.id == ChatMessage.session_id)
-                    .where(ChatSession.brand_id == brand_id)
-                    .where(ChatMessage.text.ilike(f"%{query}%") if hasattr(func, "ilike") else ChatMessage.text.like(f"%{query}%"))
-                    .order_by(ChatMessage.created_at.desc())
-                    .limit(limit)
+                like_q = f"%{query}%"
+                stmt = text(
+                    """
+                    SELECT m.*
+                      FROM chat_message m
+                      JOIN chat_session cs ON cs.id = m.session_id
+                     WHERE cs.brand_id = :brand_id
+                       AND m.text LIKE :like_q
+                     ORDER BY m.created_at DESC
+                     LIMIT :limit
+                    """
                 )
-                return list(s.execute(stmt).scalars())
+                rows = s.execute(stmt, {"brand_id": brand_id, "like_q": like_q, "limit": limit}).mappings().all()
+                ids = [r["id"] for r in rows]
+                if not ids:
+                    return []
+                return list(s.execute(select(ChatMessage).where(ChatMessage.id.in_(ids))).scalars())
 
 
 # Optional: instantiate a shared helper (import and use directly)
