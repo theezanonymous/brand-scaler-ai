@@ -1,9 +1,8 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react'
 
 const ThemeCtx = createContext()
 export function ThemeProvider({ children }){
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
   useEffect(() => {
     const root = document.documentElement
     if (theme === 'dark') root.classList.add('dark')

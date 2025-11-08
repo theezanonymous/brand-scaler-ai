@@ -1,9 +1,11 @@
-# Social Brand Scaler AI — Pro (Conversational Strategist)
+# Viralight — AI Brand Engine (v4)
 
-A polished, animated React + Vite + Tailwind frontend (mock backend) that:
-- Learns the brand → discovers similar/viral posts → explains why they work → generates post drafts.
-- Conversational strategist tone with a subtle AI typing animation.
-- Refined CSS: sheen/glow buttons, mouse-follow glow, smooth transitions.
+- Floating Viralight icon in navbar (gentle loop)
+- Static Viralight wordmark in footer (light glassy)
+- Smooth page transitions (Framer Motion AnimatePresence)
+- Full-viewport landing hero with typewriter + cursor
+- Medium-motion orbs + persistent mouse glow
+- Video-first messaging (AI video generation model)
 
 ## Run
 ```bash

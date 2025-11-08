@@ -1,76 +1,73 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { analyzeBrand } from '../api/mockAgent'
-import ShinyButton from '../components/ShinyButton'
-
+import ShinyButton from '../components/ShinyButton.jsx'
 export default function Onboarding(){
-  const [name, setName] = useState('')
+  const [name, setName] = useState('Viralight')
   const [industry, setIndustry] = useState('')
   const [tone, setTone] = useState('professional')
-  const [color, setColor] = useState('#4F46E5')
-  const [logo, setLogo] = useState(null)
-  const [persona, setPersona] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [color, setColor] = useState('#8b5cf6')
+  const [description, setDescription] = useState('')
+  const [images, setImages] = useState([])
   const navigate = useNavigate()
-
-  const uploadLogo = (e) => {
-    const f = e.target.files[0]; if(!f) return
-    const rd = new FileReader()
-    rd.onload = ev => setLogo(ev.target.result)
-    rd.readAsDataURL(f)
-  }
-
-  const next = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    const r = await analyzeBrand({ name, industry, tone, color, logo })
-    setLoading(false)
-    if (r.ok) {
-      setPersona(r.persona)
-      setTimeout(()=> navigate('/discover'), 700)
+  useEffect(()=>{
+    const existing = JSON.parse(localStorage.getItem('brand_profile') || '{}')
+    if(existing && Object.keys(existing).length){
+      setName(existing.name || 'Viralight'); setIndustry(existing.industry || ''); setTone(existing.tone || 'professional')
+      setColor(existing.color || '#8b5cf6'); setDescription(existing.description || ''); setImages(existing.images || [])
     }
+  }, [])
+  const onSelect = (e)=>{
+    const files = e.target.files; if(!files || !files.length) return
+    const arr = Array.from(files)
+    Promise.all(arr.map(f=> new Promise(res=>{ const r = new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(f) })))
+      .then(urls => setImages(prev => [...prev, ...urls]))
   }
-
+  const removeAt = (idx)=> setImages(prev => prev.filter((_,i)=>i!==idx))
+  const save = (e)=>{ e.preventDefault(); const profile = { name, industry, tone, color, description, images }; localStorage.setItem('brand_profile', JSON.stringify(profile)); navigate('/dashboard') }
   return (
     <div className="container py-12">
-      <div className="max-w-3xl mx-auto card p-8">
-        <h2 className="text-2xl font-semibold mb-6">1) Understand your brand</h2>
-        <form onSubmit={next} className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm block mb-1">Brand name</label>
-              <input value={name} onChange={e=>setName(e.target.value)} className="w-full rounded border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2" placeholder="LumaWear, PeakFuel, EcoMuse…" />
-            </div>
-            <div>
-              <label className="text-sm block mb-1">Industry</label>
-              <input value={industry} onChange={e=>setIndustry(e.target.value)} className="w-full rounded border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2" placeholder="Apparel, Energy, Sustainability…" />
-            </div>
-            <div>
-              <label className="text-sm block mb-1">Tone</label>
-              <select value={tone} onChange={e=>setTone(e.target.value)} className="w-full rounded border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2">
-                <option>professional</option>
-                <option>helpful</option>
-                <option>bold</option>
-                <option>witty</option>
+      <div className="max-w-4xl mx-auto card p-8 space-y-8">
+        <div>
+          <h2 className="text-2xl font-semibold">Brand Profile</h2>
+          <p className="text-sm text-slate-500">Update anything — the video model adapts strategy instantly.</p>
+        </div>
+        <form onSubmit={save} className="grid md:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <label className="text-sm block">Brand Name</label>
+            <div className="input-wrap"><input value={name} onChange={e=>setName(e.target.value)} className="input" placeholder="Brand name"/></div>
+            <label className="text-sm block">Industry</label>
+            <div className="input-wrap"><input value={industry} onChange={e=>setIndustry(e.target.value)} className="input" placeholder="Apparel, Energy, Sustainability…"/></div>
+            <label className="text-sm block">Tone</label>
+            <div className="input-wrap">
+              <select value={tone} onChange={e=>setTone(e.target.value)} className="input">
+                <option>professional</option><option>helpful</option><option>bold</option><option>witty</option>
               </select>
             </div>
-            <div>
-              <label className="text-sm block mb-1">Accent color</label>
-              <input type="color" value={color} onChange={e=>setColor(e.target.value)} className="h-10 w-16 rounded border border-slate-300 dark:border-neutral-700" />
-            </div>
+            <label className="text-sm block">Accent color</label>
+            <input type="color" value={color} onChange={e=>setColor(e.target.value)} className="h-10 w-16 rounded border border-slate-300 dark:border-neutral-700" />
           </div>
-          <div>
-            <label className="text-sm block mb-1">Logo (optional)</label>
-            <input type="file" accept="image/*" onChange={uploadLogo}/>
-            {logo && <img src={logo} alt="logo" className="mt-3 h-20 w-20 object-contain rounded bg-white p-2 border border-slate-200 dark:border-neutral-800"/>}
-            <div className="mt-6 p-3 rounded border border-slate-200 dark:border-neutral-800" style={{borderColor: color}}>
-              <div className="text-xs text-slate-500">Preview</div>
-              <div className="font-medium" style={{color}}>Primary accent</div>
-              <div className="text-sm mt-1 text-slate-600 dark:text-slate-300">{persona || 'We’ll infer your brand voice and audience focus.'}</div>
-            </div>
+          <div className="space-y-3">
+            <label className="text-sm block">Describe your brand</label>
+            <div className="input-wrap"><textarea value={description} onChange={e=>setDescription(e.target.value)} rows={10} className="input" placeholder="Voice, audience, story, values, visual style…"/></div>
+            <div className="text-xs text-slate-500">Used by the AI video model to shape Reel pacing, captions, and visuals.</div>
           </div>
-          <div className="md:col-span-2 flex justify-end">
-            <ShinyButton>{loading ? 'Analyzing…' : 'Continue to discovery'}</ShinyButton>
+          <div className="md:col-span-2 space-y-3">
+            <h3 className="font-semibold">Upload brand photos</h3>
+            <input type="file" accept="image/*" multiple onChange={onSelect} />
+            {images.length>0 && (
+              <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-3">
+                {images.map((src,i)=>(
+                  <div key={i} className="thumb relative">
+                    <img src={src} alt={`u-${i}`} className="rounded"/>
+                    <button type="button" onClick={()=>removeAt(i)} className="absolute top-1 right-1 bg-white/90 dark:bg-neutral-900/90 border border-slate-200 dark:border-neutral-800 rounded-md px-2 py-1 text-xs">×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="md:col-span-2 flex justify-end gap-2">
+            <button type="button" className="btn btn-outline btn-sheen btn-glow parallax" onClick={()=>navigate('/dashboard')}>Cancel</button>
+            <ShinyButton>Save changes</ShinyButton>
           </div>
         </form>
       </div>

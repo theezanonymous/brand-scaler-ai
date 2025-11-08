@@ -1,44 +1,25 @@
 import React, { useEffect, useState } from 'react'
-import { generateInsights } from '../api/mockAgent'
-import AITextReveal from '../components/AITextReveal'
-import AITyping from '../components/AITyping'
+import { insightsReport } from '../api/mockAgent.js'
 import { Link } from 'react-router-dom'
-import ShinyButton from '../components/ShinyButton'
-
+import ShinyButton from '../components/ShinyButton.jsx'
 export default function Insights(){
-  const [out, setOut] = useState(null)
-  const [thinking, setThinking] = useState(true)
-
-  useEffect(()=>{
-    (async ()=>{
-      const r = await generateInsights({ posts: [] })
-      setTimeout(()=>{
-        if (r.ok) setOut(r)
-        setThinking(false)
-      }, 1200)
-    })()
-  },[])
-
+  const [r, setR] = useState(null)
+  useEffect(()=>{ (async()=> setR(await insightsReport()))() },[])
   return (
-    <div className="container py-12 space-y-8">
-      <h2 className="text-2xl font-semibold">3) Why those posts worked</h2>
-
-      {thinking && <AITyping label="Thinking about your niche…" />}
-
-      {!out ? (
-        <div className="h-28 skeleton" />
-      ) : (
-        <div className="card p-6">
-          <AITextReveal text={out.summary} />
-          <ul className="mt-4 list-disc pl-5 space-y-1 text-sm text-slate-700 dark:text-slate-300">
-            {out.bullets.map((b,i)=>(<li key={i}>{b}</li>))}
-          </ul>
+    <div className="container py-12 space-y-6">
+      <h2 className="text-2xl font-semibold">Insights — Patterns To Use</h2>
+      {!r ? <div className="h-28 skeleton" /> : (<>
+        <div className="card agent-surface p-6"><div className="bubble">{r.summary}</div></div>
+        <div className="grid md:grid-cols-3 gap-4">
+          <div className="card p-4"><div className="font-semibold mb-2">Common hooks</div>
+            <ul className="list-disc pl-5 text-sm">{r.commonHooks.map((x,i)=>(<li key={i}>{x}</li>))}</ul></div>
+          <div className="card p-4"><div className="font-semibold mb-2">Emotional tones</div>
+            <ul className="list-disc pl-5 text-sm">{r.tones.map((x,i)=>(<li key={i}>{x}</li>))}</ul></div>
+          <div className="card p-4"><div className="font-semibold mb-2">CTAs seen</div>
+            <ul className="list-disc pl-5 text-sm">{r.ctas.map((x,i)=>(<li key={i}>{x}</li>))}</ul></div>
         </div>
-      )}
-
-      <div className="flex justify-end">
-        <Link to="/create"><ShinyButton>Generate content ideas</ShinyButton></Link>
-      </div>
+        <div className="flex justify-end"><Link to="/create"><ShinyButton>Generate Content</ShinyButton></Link></div>
+      </>)}
     </div>
   )
 }

@@ -4,24 +4,23 @@ export default {
   theme: {
     extend: {
       colors: {
-        accent: {
-          500: '#6366F1',
-          600: '#4F46E5'
-        }
+        accent: { 500: '#8b5cf6' },
+        pop: { 500: '#ec4899' }
       },
       boxShadow: {
         subtle: '0 4px 14px rgba(0,0,0,0.05)',
         lift: '0 10px 28px rgba(0,0,0,0.08)'
       },
       keyframes: {
-        sheen: { '0%': { transform: 'translateX(-160%)'}, '100%': { transform: 'translateX(160%)'} },
-        blink: { '0%, 80%, 100%': { opacity: .25 }, '40%': { opacity: 1 } },
-        floaty: { '0%': { transform: 'translateY(0px)'}, '50%': { transform: 'translateY(-4px)'}, '100%': { transform: 'translateY(0px)'} }
+        blink: { '0%, 50%': { opacity: 1 }, '50.01%, 100%': { opacity: 0 } },
+        overlayIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } }
       },
       animation: {
-        sheen: 'sheen 1.2s linear',
-        blink: 'blink 1.4s infinite both',
-        floaty: 'floaty 6s ease-in-out infinite'
+        blink: 'blink 1s step-end infinite',
+        overlayIn: 'overlayIn .2s ease-out'
+      },
+      backgroundImage: {
+        'agent-grad': 'linear-gradient(120deg, rgba(139,92,246,0.12), rgba(236,72,153,0.10))'
       }
     }
   },

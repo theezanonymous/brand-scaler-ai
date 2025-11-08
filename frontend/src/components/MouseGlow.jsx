@@ -1,7 +1,3 @@
 import React from 'react'
-import useMousePosition from '../hooks/useMousePosition'
-
-export default function MouseGlow(){
-  useMousePosition() // sets CSS vars --mx/--my
-  return <div className="mouse-glow" />
-}
+import useMousePosition from '../hooks/useMousePosition.jsx'
+export default function MouseGlow(){ useMousePosition(); return <div className="mouse-glow" /> }
