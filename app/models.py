@@ -16,7 +16,7 @@ class Brand(Base):
     __tablename__ = "brand"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    # 해커톤 무-auth 모드: 소유자 없이도 허용 (NULL OK)
+    #null = ok
     owner_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     name: Mapped[str] = mapped_column(Text, nullable=False)
