@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+body { @apply text-slate-800 dark:text-slate-100; }
+.container { @apply max-w-7xl mx-auto px-6; }
+
+.card { @apply bg-white dark:bg-neutral-900 rounded-xl border border-slate-200/70 dark:border-neutral-800 shadow-subtle; }
+.btn { @apply inline-flex items-center gap-2 rounded-md px-4 py-2 transition; }
+.btn-primary { @apply btn bg-accent-600 text-white hover:bg-accent-500; }
+.btn-outline { @apply btn border border-slate-300 dark:border-neutral-700 hover:bg-slate-100/50 dark:hover:bg-neutral-800/80; }
+
+.skeleton { @apply animate-pulse rounded bg-slate-200 dark:bg-neutral-800; }
+.kpi { @apply card p-4; }
