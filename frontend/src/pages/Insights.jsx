@@ -1,19 +1,29 @@
 import React, { useEffect, useState } from 'react'
 import { generateInsights } from '../api/mockAgent'
 import AITextReveal from '../components/AITextReveal'
+import AITyping from '../components/AITyping'
+import { Link } from 'react-router-dom'
+import ShinyButton from '../components/ShinyButton'
 
 export default function Insights(){
   const [out, setOut] = useState(null)
+  const [thinking, setThinking] = useState(true)
+
   useEffect(()=>{
     (async ()=>{
       const r = await generateInsights({ posts: [] })
-      if (r.ok) setOut(r)
+      setTimeout(()=>{
+        if (r.ok) setOut(r)
+        setThinking(false)
+      }, 1200)
     })()
   },[])
 
   return (
     <div className="container py-12 space-y-8">
       <h2 className="text-2xl font-semibold">3) Why those posts worked</h2>
+
+      {thinking && <AITyping label="Thinking about your niche…" />}
 
       {!out ? (
         <div className="h-28 skeleton" />
@@ -27,7 +37,7 @@ export default function Insights(){
       )}
 
       <div className="flex justify-end">
-        <a href="/create" className="btn-primary">Generate content ideas</a>
+        <Link to="/create"><ShinyButton>Generate content ideas</ShinyButton></Link>
       </div>
     </div>
   )

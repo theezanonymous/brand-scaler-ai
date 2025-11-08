@@ -13,7 +13,7 @@ export default function Navbar(){
     <header className="sticky top-0 z-20 backdrop-blur border-b border-slate-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-950/70">
       <div className="container h-14 flex items-center justify-between">
         <div className="flex items-center gap-2 font-semibold">
-          <span className="text-accent-600">●</span> Social Brand Scaler AI
+          <span className="text-accent-600">●</span> Social Brand Scaler AI — Pro
         </div>
         <nav className="flex items-center gap-1">
           <LinkItem to="/" label="Home" />

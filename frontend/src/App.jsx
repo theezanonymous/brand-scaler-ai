@@ -1,7 +1,7 @@
 import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Navbar from './components/Navbar'
-import AnimatedBubbles from './components/AnimatedBubbles'
+import MouseGlow from './components/MouseGlow'
 import Landing from './pages/Landing'
 import Onboarding from './pages/Onboarding'
 import Discover from './pages/Discover'
@@ -12,7 +12,7 @@ import Dashboard from './pages/Dashboard'
 export default function App(){
   return (
     <div className="min-h-screen relative">
-      <AnimatedBubbles />
+      <MouseGlow />
       <Navbar />
       <main className="relative z-10">
         <Routes>
@@ -22,7 +22,7 @@ export default function App(){
           <Route path="/insights" element={<Insights/>} />
           <Route path="/create" element={<CreateContent/>} />
           <Route path="/dashboard" element={<Dashboard/>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to='/' replace />} />
         </Routes>
       </main>
     </div>

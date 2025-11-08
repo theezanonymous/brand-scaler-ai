@@ -3,13 +3,38 @@
 @tailwind utilities;
 
 html, body, #root { height: 100%; }
-body { @apply text-slate-800 dark:text-slate-100; }
-.container { @apply max-w-7xl mx-auto px-6; }
+html { scroll-behavior: smooth; }
+body { @apply text-slate-800 dark:text-slate-100 transition-colors duration-500; }
+.container { @apply max-w-7xl mx-auto px-6 md:px-10; }
 
-.card { @apply bg-white dark:bg-neutral-900 rounded-xl border border-slate-200/70 dark:border-neutral-800 shadow-subtle; }
-.btn { @apply inline-flex items-center gap-2 rounded-md px-4 py-2 transition; }
-.btn-primary { @apply btn bg-accent-600 text-white hover:bg-accent-500; }
-.btn-outline { @apply btn border border-slate-300 dark:border-neutral-700 hover:bg-slate-100/50 dark:hover:bg-neutral-800/80; }
+.card { @apply bg-white dark:bg-neutral-900 rounded-xl border border-slate-200/70 dark:border-neutral-800; box-shadow: theme('boxShadow.subtle'); transition: all .25s ease; }
+.card:hover { transform: translateY(-2px); box-shadow: theme('boxShadow.lift'); }
 
 .skeleton { @apply animate-pulse rounded bg-slate-200 dark:bg-neutral-800; }
-.kpi { @apply card p-4; }
+
+.btn { @apply relative inline-flex items-center gap-2 rounded-lg px-5 py-2.5 font-medium transition-all duration-200 ease-out select-none; transform-style: preserve-3d; will-change: transform, box-shadow; }
+.btn:hover { @apply shadow-lg; transform: translateY(-1px) scale(1.02); }
+
+.btn-primary { @apply text-white; background-image: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%); }
+.btn-outline { @apply border border-slate-300 dark:border-neutral-700; background: linear-gradient(135deg, rgba(255,255,255,.04), rgba(255,255,255,0)); }
+
+.btn-sheen::before {
+  content: "";
+  position: absolute; inset: 0; border-radius: 12px; opacity: 0; transition: opacity .3s ease;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,.5), transparent);
+  /* transform: translateX(-160%); */
+}
+.btn-sheen:hover::before { opacity: .25; animation: sheen 1.2s linear; }
+
+.btn-glow::after {
+  content: ''; position: absolute; inset: -2px; border-radius: 12px;
+  background: radial-gradient(320px 160px at var(--mx,50%) var(--my,50%), rgba(99,102,241,0.35), transparent 60%);
+  pointer-events: none; opacity: 0; transition: opacity .2s ease;
+}
+.btn-glow:hover::after { opacity: .75; }
+.parallax:hover { transform: translateY(-1px) scale(1.02); }
+
+.mouse-glow { pointer-events: none; position: fixed; inset: 0; z-index: 5; will-change: background;
+  background: radial-gradient(400px 300px at var(--mx,50%) var(--my,50%), rgba(99,102,241,0.08), transparent 60%);
+  transition: background .3s ease;
+}
