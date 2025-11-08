@@ -25,7 +25,7 @@ export default function CreateContent(){
       {!profile?.images?.length ? (
         <div className="card p-6">No brand photos found. Go to Onboarding to add visuals.</div>
       ) : batch.length === 0 ? (
-        <div className="card p-6">Click “Generate mockups” to create multiple AI Reel concepts from your uploaded photos. These represent short AI-generated videos, personalized to your brand.</div>
+        <div className="card p-6">Click “Generate" to create multiple AI content concepts personalized to your brand.</div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
           {batch.map(item => (<PostPreview key={item.id} data={item} />))}

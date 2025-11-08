@@ -30,7 +30,7 @@ export default function Discover(){
           ))}
         </div>
         <div className="flex justify-end">
-          <Link to="/insights"><ShinyButton>See insights</ShinyButton></Link>
+          <Link to="/insights"><ShinyButton>See Insights</ShinyButton></Link>
         </div>
       </>)}
     </div>

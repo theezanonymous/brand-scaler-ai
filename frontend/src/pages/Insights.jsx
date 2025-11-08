@@ -11,11 +11,11 @@ export default function Insights(){
       {!r ? <div className="h-28 skeleton" /> : (<>
         <div className="card agent-surface p-6"><div className="bubble">{r.summary}</div></div>
         <div className="grid md:grid-cols-3 gap-4">
-          <div className="card p-4"><div className="font-semibold mb-2">Common hooks</div>
+          <div className="card p-4"><div className="font-semibold mb-2">Common Hooks</div>
             <ul className="list-disc pl-5 text-sm">{r.commonHooks.map((x,i)=>(<li key={i}>{x}</li>))}</ul></div>
-          <div className="card p-4"><div className="font-semibold mb-2">Emotional tones</div>
+          <div className="card p-4"><div className="font-semibold mb-2">Emotional Tones</div>
             <ul className="list-disc pl-5 text-sm">{r.tones.map((x,i)=>(<li key={i}>{x}</li>))}</ul></div>
-          <div className="card p-4"><div className="font-semibold mb-2">CTAs seen</div>
+          <div className="card p-4"><div className="font-semibold mb-2">Popular CTAs</div>
             <ul className="list-disc pl-5 text-sm">{r.ctas.map((x,i)=>(<li key={i}>{x}</li>))}</ul></div>
         </div>
         <div className="flex justify-end"><Link to="/create"><ShinyButton>Generate Content</ShinyButton></Link></div>

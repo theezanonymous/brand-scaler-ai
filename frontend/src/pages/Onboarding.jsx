@@ -67,7 +67,7 @@ export default function Onboarding(){
           </div>
           <div className="md:col-span-2 flex justify-end gap-2">
             <button type="button" className="btn btn-outline btn-sheen btn-glow parallax" onClick={()=>navigate('/dashboard')}>Cancel</button>
-            <ShinyButton>Save changes</ShinyButton>
+            <ShinyButton>Save Changes</ShinyButton>
           </div>
         </form>
       </div>
